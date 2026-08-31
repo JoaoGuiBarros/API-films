@@ -1,0 +1,15 @@
+{
+  "name": "api-films",
+  "version": "1.0.0",
+  "description": "API REST de Filmes em Hono (Clean Architecture)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.8",
+    "hono": "^4.7.2"
+  }
+}
