@@ -1,0 +1,22 @@
+name: Workflow de Commits
+
+on:
+  push:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar o repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar o interpretador (Node.js)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar as dependências do projeto
+        run: npm ci
+
+      - name: Executar os testes e Garantir 90% de cobertura
+        run: npm run test:coverage
