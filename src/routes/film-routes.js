@@ -10,7 +10,7 @@ const filmRepository = new FilmRepository();
 const listFilmsUseCase = new ListFilmsUseCase(filmRepository);
 const createFilmUseCase = new CreateFilmUseCase(filmRepository);
 
-const filmController = new FilmController(listFilmsUseCase, CreateFilmUseCase);
+const filmController = new FilmController(listFilmsUseCase, createFilmUseCase);
 
 filmRoutes.get('/filmes', (c) => filmController.list(c));
 
