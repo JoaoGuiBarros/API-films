@@ -11,14 +11,14 @@ export class FilmRepository {
   }
 
   create(filmData) {
-    const novoId = mockFilms.length > 0 ? Math.max(...mockFilms.map(f => f.id)) + 1 : 1;
+    const novoId = this.dataSource.length > 0 ? Math.max(...this.dataSource.map(f => f.id)) + 1 : 1;
     
     const novoFilme = {
       id: novoId,
       ...filmData
     };
     
-    mockFilms.push(novoFilme);
+    this.dataSource.push(novoFilme);
     return novoFilme;
   }
 }
