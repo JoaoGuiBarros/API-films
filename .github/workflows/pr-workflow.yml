@@ -24,3 +24,6 @@ jobs:
 
       - name: Executar os testes e Garantir 90% de cobertura
         run: npm run test:coverage
+      
+      - name: Verificação de Linter
+        run: npm run lint
