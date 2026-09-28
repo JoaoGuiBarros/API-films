@@ -21,4 +21,14 @@ export class FilmRepository {
     this.dataSource.push(novoFilme);
     return novoFilme;
   }
+
+  delete(filmId) {
+    const index = this.dataSource.findIndex(film => film.id === filmId);
+
+    if (index === -1) {
+      throw new Error(`Filme com ID ${filmId} não encontrado.`);
+    }
+
+    this.dataSource.splice(index, 1);
+  }
 }

@@ -1,7 +1,8 @@
 export class FilmController {
-  constructor(listFilmsUseCase, createFilmUseCase) {
+  constructor(listFilmsUseCase, createFilmUseCase, deleteFilmUseCase) {
     this.listFilmsUseCase = listFilmsUseCase;
     this.createFilmUseCase = createFilmUseCase;
+    this.deleteFilmUseCase = deleteFilmUseCase;
   }
 
   async list(c) {
@@ -20,6 +21,16 @@ export class FilmController {
       return c.json(novoFilme, 201); 
     } catch (error) {
       return c.json({ error: error.message }, 400); 
+    }
+  }
+
+  async delete(c) {
+    try {
+      const filmId = parseInt(c.req.param('id'), 10);
+      await this.deleteFilmUseCase.execute(filmId);
+      return c.json({}, 204);
+    } catch (error) {
+      return c.json({ error: error.message }, 404);
     }
   }
 }
