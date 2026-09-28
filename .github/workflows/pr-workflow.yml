@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Clonar o repositório
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Instalar o interpretador (Node.js)
         uses: actions/setup-node@v4
@@ -27,3 +29,9 @@ jobs:
       
       - name: Verificação de Linter
         run: npm run lint
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
