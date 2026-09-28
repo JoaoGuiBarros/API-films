@@ -42,4 +42,27 @@ describe('FilmRepository', () => {
     
     expect(filmes).toHaveLength(4);
   });
+
+  it('deve deletar um filme existente', () => {
+    const fakeDataSource = [
+      { id: 1, titulo: "Teste 1" },
+      { id: 2, titulo: "Teste 2" }
+    ];
+
+    const repository = new FilmRepository(fakeDataSource);
+
+    repository.delete(1);
+
+    expect(fakeDataSource).toHaveLength(1);
+    expect(fakeDataSource[0].id).toBe(2);
+  });
+
+  it('Deve lançar um erro ao tentar deletar um filme que não existe', () => {
+    const fakeDataSource = [
+      { id: 1, titulo: "Teste 1" }
+    ];
+    const repository = new FilmRepository(fakeDataSource);
+
+    expect(() => repository.delete(2)).toThrow('Filme com ID 2 não encontrado.');
+  });
 });

@@ -3,18 +3,21 @@ import { FilmController } from '../src/controllers/film-controller.js';
 describe('FilmController', () => {
   let mockListUseCase;
   let mockCreateUseCase;
+  let mockDeleteUseCase;
   let filmController;
   let mockContext;
 
   beforeEach(() => {
     mockListUseCase = { execute: jest.fn() };
     mockCreateUseCase = { execute: jest.fn() };
-    filmController = new FilmController(mockListUseCase, mockCreateUseCase);
+    mockDeleteUseCase = { execute: jest.fn() };
+    filmController = new FilmController(mockListUseCase, mockCreateUseCase, mockDeleteUseCase);
     
     mockContext = {
       json: jest.fn((data, status) => ({ data, status })),
       req: {
-        json: jest.fn()
+        json: jest.fn(),
+        param: jest.fn()
       }
     };
   });
@@ -64,6 +67,30 @@ describe('FilmController', () => {
 
       expect(result.status).toBe(400);
       expect(result.data).toEqual({ error: "Campos obrigatórios faltando" });
+    });
+  });
+
+  describe('Método delete()', () => {
+    it('deve retornar status 204 e corpo vazio em caso de sucesso', async () => {
+      mockContext.req.param.mockReturnValue('1');
+
+      const result = await filmController.delete(mockContext);
+
+      expect(mockDeleteUseCase.execute).toHaveBeenCalledWith(1);
+      expect(result.status).toBe(204);
+      expect(result.data).toEqual({});
+    });
+
+    it('deve retornar status 404 e a mensagem de erro em caso de filme não encontrado', async () => {
+      mockContext.req.param.mockReturnValue('1');
+      mockDeleteUseCase.execute.mockImplementation(() => {
+        throw new Error("Filme com ID 1 não encontrado.");
+      });
+
+      const result = await filmController.delete(mockContext);
+
+      expect(result.status).toBe(404);
+      expect(result.data).toEqual({ error: "Filme com ID 1 não encontrado." });
     });
   });
 });
