@@ -26,7 +26,7 @@ export class FilmController {
 
   async delete(c) {
     try {
-      const filmId = parseInt(c.req.param('id'), 10);
+      const filmId = Number.parseInt(c.req.param('id'), 10);
       await this.deleteFilmUseCase.execute(filmId);
       return c.json({}, 204);
     } catch (error) {
