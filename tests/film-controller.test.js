@@ -15,6 +15,7 @@ describe('FilmController', () => {
     
     mockContext = {
       json: jest.fn((data, status) => ({ data, status })),
+      body: jest.fn((data, status) => ({ data, status })),
       req: {
         json: jest.fn(),
         param: jest.fn()
@@ -78,7 +79,7 @@ describe('FilmController', () => {
 
       expect(mockDeleteUseCase.execute).toHaveBeenCalledWith(1);
       expect(result.status).toBe(204);
-      expect(result.data).toEqual({});
+      expect(result.data).toEqual(null);
     });
 
     it('deve retornar status 404 e a mensagem de erro em caso de filme não encontrado', async () => {
