@@ -16,6 +16,7 @@ app.route('/api', filmRoutes);
 
 export default app;
 
+/* istanbul ignore next */
 if (process.env.NODE_ENV !== 'test') {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
     serve({
