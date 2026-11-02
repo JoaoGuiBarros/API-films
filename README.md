@@ -38,3 +38,10 @@ curl http://localhost:8080/api/filmes
 
   A escolha desse modelo se deve à organização do ciclo de entrega. Ele garante que a branch main permaneça sempre
   estável, separando o desenvolvimento diário, o ambiente de testes e a versão final do sistema
+
+## Docker Hub
+[![Docker Pulls](https://badgen.net/docker/pulls/joaoguibarros/api-films)](https://hub.docker.com/r/joaoguibarros/api-films)
+[![Docker Image Size](https://badgen.net/docker/size/joaoguibarros/api-films)](https://hub.docker.com/r/joaoguibarros/api-films)
+
+A imagem oficial desta API está disponível no Docker Hub:
+[hub.docker.com/r/joaoguibarros/api-films](https://hub.docker.com/r/joaoguibarros/api-films)
