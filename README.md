@@ -128,3 +128,12 @@ Com as VMs em execução, os testes devem ser realizados diretamente a partir da
    * Desligar as VMs: `vagrant halt`
    * Reiniciar e reaplicar provisionamento: `vagrant reload --provision`
    * Destruir as VMs para liberar espaço: `vagrant destroy -f`
+
+## Implantação e Configuração com Ansible
+
+A infraestrutura é provisionada automaticamente a partir da **VM1 (Nó de Controle)** para a **VM2 (Servidor)** utilizando Ansible.
+
+### Como executar o Playbook
+1. Com as máquinas em execução, acesse a VM1 via SSH:
+   ```bash
+   vagrant ssh vm1

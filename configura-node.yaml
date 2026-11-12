@@ -1,0 +1,43 @@
+---
+- name: Configurar VM2 e implantar a API
+  hosts: vm2
+  become: yes
+  tasks:
+    - name: Atualizar cache do apt e instalar dependências do sistema
+      apt:
+        name: 
+          - git
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Baixar o script de setup do Node.js 20.x
+      shell: curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+
+    - name: Instalar Node.js
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Clonar repositório da API
+      git:
+        repo: 'https://github.com/JoaoGuiBarros/API-films.git'
+        dest: /home/vagrant/api-films
+        version: feat/ansible-integration
+        force: yes
+
+    - name: Instalar dependências de execução (npm ci)
+      command: npm ci --omit=dev
+      args:
+        chdir: /home/vagrant/api-films
+
+    - name: Instalar PM2 globalmente para rodar a API em background
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Iniciar a aplicação na porta 8080
+      command: pm2 start src/server.js --name api-films
+      args:
+        chdir: /home/vagrant/api-films
