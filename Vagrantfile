@@ -1,6 +1,5 @@
 Vagrant.configure("2") do |config|
-  # Box altamente compatível com múltiplos OS host (Windows, Linux, macOS)
-  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.box = "ubuntu/jammy64"
 
   # =====================================================================
   # VM2: Infraestrutura da Aplicação (Definida primeiro)
@@ -8,7 +7,7 @@ Vagrant.configure("2") do |config|
   config.vm.define "vm2" do |vm2|
     vm2.vm.hostname = "vm2"
     # Definir um endereço IPv4 privado (Classe C) de acordo com o inventário
-    vm2.vm.network "private_network", ip: "192.168.100.11"
+    vm2.vm.network "private_network", ip: "192.168.56.11"
     
     vm2.vm.provider "virtualbox" do |vb|
       # Memória necessária para execução do backend Node.js
@@ -37,7 +36,7 @@ Vagrant.configure("2") do |config|
   config.vm.define "vm1" do |vm1|
     vm1.vm.hostname = "vm1"
     # Definir um endereço IPv4 privado (Classe C)
-    vm1.vm.network "private_network", ip: "192.168.100.10"
+    vm1.vm.network "private_network", ip: "192.168.56.10"
     
     vm1.vm.provider "virtualbox" do |vb|
       vb.memory = "1024" 

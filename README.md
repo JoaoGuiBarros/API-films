@@ -50,17 +50,17 @@ A imagem oficial desta API está disponível no Docker Hub:
 
 ## Infraestrutura Multi-VM (Vagrant & Ansible)
 
-O projeto conta com uma configuração multi-máquina gerenciada pelo Vagrant utilizando o provedor VirtualBox, e provisionada automaticamente via Ansible. Isso simula uma arquitetura distribuída em uma rede privada Classe C (`192.168.100.0/24`).
+O projeto conta com uma configuração multi-máquina gerenciada pelo Vagrant utilizando o provedor VirtualBox, e provisionada automaticamente via Ansible. Isso simula uma arquitetura distribuída em uma rede privada Classe C (`192.168.56.0/24`).
 
 ### Topologia das Máquinas Virtuais
 
 * **VM1 (`vm1`) - Nó de Controle / Cliente:**
-  * **IP Privado:** `192.168.100.10`
+  * **IP Privado:** `192.168.56.10`
   * **Memória RAM:** 1024 MB
   * **Provisionamento:** Instalação do Ansible, sshpass e montagem da pasta `/vagrant`. É responsável por disparar o playbook automatizado para a VM2.
 
 * **VM2 (`vm2`) - Servidor / Backend API:**
-  * **IP Privado:** `192.168.100.11`
+  * **IP Privado:** `192.168.56.11`
   * **Memória RAM:** 1024 MB
   * **Pasta Sincronizada:** Pasta do repositório mapeada para `/vagrant_data`
   * **Provisionamento:** Gerenciado pelo Ansible disparado da VM1. Instala o Node.js 20.x, clona o repositório, instala dependências (`npm ci`) e executa a aplicação via PM2 na porta `8080`.
@@ -89,15 +89,15 @@ Para verificar se a infraestrutura foi configurada com sucesso, os testes devem 
 
 2. **Teste a rota raiz com `curl` ou `wget`:**
    ```bash
-   curl http://192.168.100.11:8080/
+   curl http://192.168.56.11:8080/
    # ou
-   wget -qO- http://192.168.100.11:8080/
+   wget -qO- http://192.168.56.11:8080/
    ```
    *Resposta esperada:* `{"status":"ok","message":"API Films rodando"}`
 
 3. **Teste a rota de filmes:**
    ```bash
-   curl -i http://192.168.100.11:8080/api/filmes
+   curl -i http://192.168.56.11:8080/api/filmes
    ```
 
 4. **Encerrar a sessão SSH:**
