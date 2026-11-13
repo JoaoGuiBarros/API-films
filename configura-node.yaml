@@ -5,7 +5,7 @@
   tasks:
     - name: Atualizar cache do apt e instalar dependências do sistema
       apt:
-        name: 
+        name:
           - git
           - curl
           - ca-certificates
@@ -14,6 +14,7 @@
 
     - name: Baixar o script de setup do Node.js 20.x
       shell: curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      creates: /etc/apt/sources.list.d/nodesource.list
 
     - name: Instalar Node.js
       apt:
@@ -41,3 +42,4 @@
       command: pm2 start src/server.js --name api-films
       args:
         chdir: /home/vagrant/api-films
+      ignore_errors: yes
