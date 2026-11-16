@@ -12,6 +12,15 @@ app.get('/', (c) => {
     });
 });
 
+app.get('/health', (c) => {
+    return c.json({
+        status: 'UP',
+        uptime: Math.floor(process.uptime()),
+        memory_rss_mb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+        timestamp: new Date().toISOString()
+    }, 200);
+});
+
 app.route('/api', filmRoutes);
 
 export default app;
