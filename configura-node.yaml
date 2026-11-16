@@ -1,5 +1,5 @@
 ---
-- name: Configurar VM2 e implantar a API
+- name: Configurar VM2, implantar a API e instalar Zabbix Agent 2
   hosts: vm2
   become: yes
   tasks:
@@ -9,6 +9,7 @@
           - git
           - curl
           - ca-certificates
+          - wget
         state: present
         update_cache: yes
 
@@ -39,8 +40,56 @@
         name: pm2
         global: yes
 
-    - name: Iniciar a aplicação na porta 8080
-      command: pm2 start src/server.js --name api-films
+    - name: Iniciar ou reiniciar a aplicação na porta 8080
+      shell: pm2 describe api-films > /dev/null && pm2 restart api-films || pm2 start src/server.js --name api-films
       args:
         chdir: /home/vagrant/api-films
-      ignore_errors: yes
+
+    - name: Baixar repositório oficial do Zabbix 7.0 LTS (Ubuntu 22.04 Jammy)
+      get_url:
+        url: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu22.04_all.deb
+        dest: /tmp/zabbix-release.deb
+
+    - name: Instalar pacote de repositório do Zabbix
+      apt:
+        deb: /tmp/zabbix-release.deb
+        state: present
+
+    - name: Instalar Zabbix Agent 2
+      apt:
+        name: zabbix-agent2
+        state: present
+        update_cache: yes
+
+    - name: Configurar IP do Zabbix Server (Passivo) no zabbix_agent2.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_agent2.conf
+        regexp: '^Server='
+        line: "Server={{ zabbix_server_ip }}"
+
+    - name: Configurar IP do Zabbix Server (Ativo) no zabbix_agent2.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_agent2.conf
+        regexp: '^ServerActive='
+        line: "ServerActive={{ zabbix_server_ip }}"
+
+    - name: Configurar Hostname no zabbix_agent2.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_agent2.conf
+        regexp: '^Hostname='
+        line: "Hostname={{ inventory_hostname }}"
+
+    - name: Criar monitoramento customizado (UserParameter) para a API Films
+      copy:
+        dest: /etc/zabbix/zabbix_agent2.d/api_films.conf
+        content: |
+          # Retorna o código HTTP do endpoint /health (esperado: 200)
+          UserParameter=api.films.health.status,curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo 0
+          # Retorna o JSON completo do /health
+          UserParameter=api.films.health.json,curl -s http://localhost:8080/health || echo '{"status":"DOWN"}'
+
+    - name: Habilitar e reiniciar o serviço zabbix-agent2
+      systemd:
+        name: zabbix-agent2
+        state: restarted
+        enabled: yes

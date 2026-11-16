@@ -33,6 +33,18 @@ describe('Integração - Rotas de Filmes', () => {
       message: 'API Films rodando'
     });
   });
+
+  it('Deve retornar as métricas de saúde da API no GET /health', async () => {
+    const res = await app.request('/health');
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.status).toBe('UP');
+    expect(typeof body.uptime).toBe('number');
+    expect(typeof body.memory_rss_mb).toBe('number');
+    expect(typeof body.timestamp).toBe('string');
+  });
+
   it('Deve criar um filme no POST /api/filmes', async () => {
     const novoFilme = {
       titulo: 'Matrix',
