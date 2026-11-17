@@ -93,3 +93,216 @@
         name: zabbix-agent2
         state: restarted
         enabled: yes
+
+- name: Configurar Template, Host e Validar Coleta no Zabbix Server
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    zabbix_api_url: "http://192.168.56.10/api_jsonrpc.php"
+    zabbix_user: "Admin"
+    zabbix_password: "zabbix"
+    template_path: "/vagrant/zabbix-template-api-films.yaml"
+
+  tasks:
+    - name: Aguardar interface web/API do Zabbix ficar disponível
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "apiinfo.version"
+          params: []
+          id: 0
+      register: api_ready
+      until: api_ready.status == 200
+      retries: 36
+      delay: 5
+
+    - name: "[Passo 1] Autenticar na API do Zabbix 7.0"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "user.login"
+          params:
+            username: "{{ zabbix_user }}"
+            password: "{{ zabbix_password }}"
+          id: 1
+      register: zabbix_login
+      until: zabbix_login.json.result is defined
+      retries: 12
+      delay: 5
+
+    - name: "[Passo 2] Importar template zabbix-template-api-films.yaml"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "configuration.import"
+          params:
+            format: "yaml"
+            rules:
+              templates:
+                createMissing: true
+                updateExisting: true
+              template_groups:
+                createMissing: true
+              items:
+                createMissing: true
+                updateExisting: true
+                deleteMissing: true
+              triggers:
+                createMissing: true
+                updateExisting: true
+                deleteMissing: true
+            source: "{{ lookup('file', template_path) }}"
+          id: 2
+
+    - name: "[Passo 3] Buscar ID do grupo 'Linux servers'"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "hostgroup.get"
+          params:
+            filter:
+              name:
+                - "Linux servers"
+          id: 3
+      register: zabbix_group
+
+    - name: "[Passo 4] Buscar IDs dos templates no Zabbix"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "template.get"
+          params:
+            filter:
+              host:
+                - "API Films Node.js Monitoring"
+                - "Linux by Zabbix agent"
+          id: 4
+      register: zabbix_templates
+
+    - name: "[Passo 5] Formatar lista de templateids"
+      set_fact:
+        template_ids_list: "{{ (template_ids_list | default([])) + [{'templateid': item.templateid}] }}"
+      loop: "{{ zabbix_templates.json.result }}"
+
+    - name: "[Passo 6] Verificar se o host vm2 já está cadastrado"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.get"
+          params:
+            filter:
+              host:
+                - "vm2"
+          id: 5
+      register: zabbix_host_check
+
+    - name: "[Passo 7] Criar host vm2 e vincular templates"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.create"
+          params:
+            host: "vm2"
+            interfaces:
+              - type: 1
+                main: 1
+                useip: 1
+                ip: "192.168.56.11"
+                dns: ""
+                port: "10050"
+            groups:
+              - groupid: "{{ zabbix_group.json.result[0].groupid }}"
+            templates: "{{ template_ids_list }}"
+          id: 6
+      when: zabbix_host_check.json.result | length == 0
+
+    - name: "[Passo 8] Atualizar templates do host vm2 (caso já exista)"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.update"
+          params:
+            hostid: "{{ zabbix_host_check.json.result[0].hostid }}"
+            templates: "{{ template_ids_list }}"
+          id: 7
+      when: zabbix_host_check.json.result | length > 0
+
+    - name: "[Passo 9] Obter ID do host vm2"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.get"
+          params:
+            filter:
+              host:
+                - "vm2"
+          id: 8
+      register: zabbix_host_final
+
+    - name: "[Passo 10] Aguardar Zabbix coletar HTTP 200 da API Films (até 2 min)"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "item.get"
+          params:
+            hostids: "{{ zabbix_host_final.json.result[0].hostid }}"
+            filter:
+              key_: "api.films.health.status"
+          id: 9
+      register: zabbix_item_status
+      until:
+        - zabbix_item_status.json.result | length > 0
+        - zabbix_item_status.json.result[0].lastvalue == "200"
+      retries: 12
+      delay: 10
+
+    - name: "[Passo 11] Confirmação final"
+      debug:
+        msg: "Monitoramento ativo! O Zabbix já está coletando métricas da VM2 (status HTTP = {{ zabbix_item_status.json.result[0].lastvalue }})."
