@@ -8,4 +8,13 @@ tests
 eslint.config.js
 babel.config.json
 sonar-project.properties
-README.md
+Dockerfile
+.dockerignore
+*.md
+*.sh
+.vagrant
+Vagrantfile
+ansible.cfg
+configura-node.yaml
+inventory.ini
+zabbix-template-api-films.yaml

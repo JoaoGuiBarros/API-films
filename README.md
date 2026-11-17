@@ -38,34 +38,32 @@ Configuração multi-máquina gerenciada por Vagrant (VirtualBox) e provisionada
 
 ### Topologia das VMs
 
-* **VM1 (`vm1`) - Nó de Controle / Ansible:**
-  * **IP Privado:** `192.168.56.10` | **RAM:** 1024 MB
-  * **Função:** Executa o playbook Ansible que provisiona a VM2 automaticamente.
+* **VM1 (`vm1`) - Nó de Controle (Ansible) & Zabbix Server:**
+  * **IP Privado:** `192.168.56.10` | **RAM:** 2048 MB
+  * **Função:** Executa o playbook Ansible (`configura-node.yaml`) e hospeda a stack do **Zabbix 7.0 LTS** (Zabbix Server, Zabbix Web Nginx e PostgreSQL) via Docker Compose na porta `80` (e Zabbix Server na `10051`).
 * **VM2 (`vm2`) - Servidor / Backend API & Agente:**
   * **IP Privado:** `192.168.56.11` | **RAM:** 1024 MB
   * **Função:** Executa a API Node.js 20.x via PM2 na porta `8080` e o `zabbix-agent2` na porta `10050`.
 
 ### Provisionamento Rápido
 
-1. **Subir e provisionar as VMs:**
+1. **Subir e provisionar todo o ambiente:**
    ```bash
    vagrant up
    ```
-   *O Vagrant baixa a box base, inicia as duas VMs e a VM1 executa automaticamente o playbook `configura-node.yaml` provisionando a VM2.*
+   *O Vagrant sobe as duas VMs, inicializa os containers do Zabbix na VM1 e dispara automaticamente o `configura-node.yaml` para implantar a API, configurar o Zabbix Agent 2 na VM2 e registrar o monitoramento via API do Zabbix.*
 
 2. **Reprovisionar (caso as VMs já estejam ligadas):**
    ```bash
-   vagrant provision vm1
-   # ou via SSH dentro da VM1:
-   vagrant ssh vm1 -c "cd /vagrant && ansible-playbook -i inventory.ini configura-node.yaml"
+   vagrant provision
    ```
 
 ### Validação
 
-1. **Testar endpoints da API (via VM1 ou host):**
+1. **Testar endpoints da API (via host ou VM1):**
    ```bash
-   curl http://192.168.56.11:8080/api/filmes
-   curl http://192.168.56.11:8080/health
+   curl [http://192.168.56.11:8080/api/filmes](http://192.168.56.11:8080/api/filmes)
+   curl [http://192.168.56.11:8080/health](http://192.168.56.11:8080/health)
    ```
 
 2. **Testar chave do Zabbix Agent 2 (na VM2):**
@@ -78,12 +76,24 @@ Configuração multi-máquina gerenciada por Vagrant (VirtualBox) e provisionada
 
 ## Monitoramento Zabbix
 
-O arquivo `zabbix-template-api-films.yaml` na raiz do projeto é o template oficial pronto para importação no Zabbix 7.0 LTS.
+O arquivo `zabbix-template-api-films.yaml` na raiz do projeto contém o template oficial para o Zabbix 7.0 LTS. Todo o processo de configuração no servidor é executado **automaticamente** pelo Ansible via API JSON-RPC (`http://192.168.56.10/api_jsonrpc.php`):
 
-1. **Importar Template:** No painel web do Zabbix, acesse **Data collection** -> **Templates** -> **Import** e selecione `zabbix-template-api-films.yaml`.
-2. **Vincular Host:** Em **Data collection** -> **Hosts**, crie/edite o host `vm2` com a interface Agent `192.168.56.11:10050` e vincule os templates:
-   * `API Films Node.js Monitoring`
-   * `Linux by Zabbix agent`
+* Importação/atualização do template `API Films Node.js Monitoring`.
+* Cadastro do host `vm2` (`192.168.56.11:10050`).
+* Vinculação dos templates `API Films Node.js Monitoring` e `Linux by Zabbix agent`.
+* Validação automática da coleta inicial (`HTTP 200` no `/health`).
+
+### Acesso ao Painel Web
+
+* **URL:** `http://192.168.56.10`
+* **Usuário:** `Admin`
+* **Senha:** `zabbix`
+
+### Métricas e Alertas Configurados
+
+* **HTTP Status (`/health`):** Verifica disponibilidade a cada 30s (Trigger *High* se `HTTP <> 200`).
+* **Uptime:** Tempo de atividade do processo Node.js em segundos.
+* **Uso de Memória RSS (MB):** Consumo de RAM da aplicação (Trigger *Warning* se `> 512 MB`).
 
 ---
 
