@@ -1,17 +1,17 @@
 zabbix_export:
   version: '7.0'
   template_groups:
-    - uuid: 7df96b18c230490a9a0a9e2307226338
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
       name: Templates/Applications
   templates:
-    - uuid: a1b2c3d4e5f6478980123456789abcde
+    - uuid: d00e0173c34543e080e7a65a8419ef47
       template: 'API Films Node.js Monitoring'
       name: 'API Films Node.js Monitoring'
       description: 'Monitoramento da API REST de Filmes (Hono + PM2) na porta 8080'
       groups:
         - name: Templates/Applications
       items:
-        - uuid: 11111111222233334444555566667771
+        - uuid: 9daf0bb5761f4b26b048d1cd5c68c6b9
           name: 'API Films - HTTP Status (/health)'
           key: api.films.health.status
           delay: 30s
@@ -19,18 +19,18 @@ zabbix_export:
           value_type: UNSIGNED
           description: 'Verifica se o endpoint http://localhost:8080/health responde com HTTP 200'
           triggers:
-            - uuid: 99999999888877776666555544443331
+            - uuid: f5bdf27c781f4808b31df757204b035c
               expression: 'last(/API Films Node.js Monitoring/api.films.health.status)<>200'
               name: 'API Films está fora do ar na VM2 (HTTP <> 200)'
               priority: HIGH
-        - uuid: 11111111222233334444555566667772
+        - uuid: bbbd9d02999d4822a9577ea2d7ffed3f
           name: 'API Films - JSON Raw Health'
           key: api.films.health.json
           delay: 30s
           history: 1d
           trends: '0'
           value_type: TEXT
-        - uuid: 11111111222233334444555566667773
+        - uuid: d9b00785ebad415bad512de7134e9485
           name: 'API Films - Uptime (segundos)'
           type: DEPENDENT
           key: api.films.uptime
@@ -42,7 +42,7 @@ zabbix_export:
             - type: JSONPATH
               parameters:
                 - $.uptime
-        - uuid: 11111111222233334444555566667774
+        - uuid: 5ca3cbd669cf4ed7b8b1abf7b0cffea3
           name: 'API Films - Uso de Memória RSS (MB)'
           type: DEPENDENT
           key: api.films.memory.rss
@@ -55,7 +55,7 @@ zabbix_export:
               parameters:
                 - $.memory_rss_mb
           triggers:
-            - uuid: 99999999888877776666555544443332
+            - uuid: ae88d3b88d0840589f738ad6ca67778b
               expression: 'last(/API Films Node.js Monitoring/api.films.memory.rss)>512'
               name: 'API Films com alto consumo de memória (> 512MB)'
               priority: WARNING

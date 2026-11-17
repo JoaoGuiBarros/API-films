@@ -1,106 +1,113 @@
 # API Films
 
-API REST simples desenvolvida com Hono sobre Node.js.
+API REST de filmes desenvolvida com Hono sobre Node.js em arquitetura limpa.
 
-## Como rodar
+## Como rodar localmente
 
 ```bash
 npm install
 npm start
 ```
 
-Modo dev:
+Modo desenvolvimento:
 ```bash
 npm run dev
 ```
 
-Servidor: `http://localhost:8080`
+Servidor padrão: `http://localhost:8080`
 
-## Rotas
+## Rotas Principais
 
-### GET /api/filmes
-Retorna a lista de filmes.
-
-Exemplo de chamada:
+### `GET /api/filmes`
+Retorna a lista de filmes cadastrados.
 ```bash
 curl http://localhost:8080/api/filmes
 ```
 
-## Workflow de Versionamento
-
-O workflow adotado no projeto é o Gitflow, utilizando as branches feature, dev, stage e main.
-
-O fluxo funciona da seguinte forma:
-
-1. Novas funcionalidades são desenvolvidas em branches próprias (como feature/post-films).
-2. O código finalizado é integrado na branch dev.
-3. As alterações são enviadas para a branch stage para testes e validação.
-4. O código validado é mesclado na branch main (produção) por meio de Pull Request.
-
-A escolha desse modelo se deve à organização do ciclo de entrega. Ele garante que a branch main permaneça sempre estável, separando o desenvolvimento diário, o ambiente de testes e a versão final do sistema.
-
-## Docker Hub
-[![Docker Pulls](https://badgen.net/docker/pulls/joaoguibarros/api-films)](https://hub.docker.com/r/joaoguibarros/api-films)
-[![Docker Image Size](https://badgen.net/docker/size/joaoguibarros/api-films)](https://hub.docker.com/r/joaoguibarros/api-films)
-
-A imagem oficial desta API está disponível no Docker Hub:
-[hub.docker.com/r/joaoguibarros/api-films](https://hub.docker.com/r/joaoguibarros/api-films)
+### `GET /health`
+Endpoint de monitoramento e integridade (status, uptime e consumo de memória RSS).
+```bash
+curl http://localhost:8080/health
+```
 
 ---
 
 ## Infraestrutura Multi-VM (Vagrant & Ansible)
 
-O projeto conta com uma configuração multi-máquina gerenciada pelo Vagrant utilizando o provedor VirtualBox, e provisionada automaticamente via Ansible. Isso simula uma arquitetura distribuída em uma rede privada Classe C (`192.168.56.0/24`).
+Configuração multi-máquina gerenciada por Vagrant (VirtualBox) e provisionada automaticamente via Ansible em rede privada Classe C (`192.168.56.0/24`).
 
-### Topologia das Máquinas Virtuais
+### Topologia das VMs
 
-* **VM1 (`vm1`) - Nó de Controle / Cliente:**
-  * **IP Privado:** `192.168.56.10`
-  * **Memória RAM:** 1024 MB
-  * **Provisionamento:** Instalação do Ansible, sshpass e montagem da pasta `/vagrant`. É responsável por disparar o playbook automatizado para a VM2.
+* **VM1 (`vm1`) - Nó de Controle (Ansible) & Zabbix Server:**
+  * **IP Privado:** `192.168.56.10` | **RAM:** 2048 MB
+  * **Função:** Executa o playbook Ansible (`configura-node.yaml`) e hospeda a stack do **Zabbix 7.0 LTS** (Zabbix Server, Zabbix Web Nginx e PostgreSQL) via Docker Compose na porta `80` (e Zabbix Server na `10051`).
+* **VM2 (`vm2`) - Servidor / Backend API & Agente:**
+  * **IP Privado:** `192.168.56.11` | **RAM:** 1024 MB
+  * **Função:** Executa a API Node.js 20.x via PM2 na porta `8080` e o `zabbix-agent2` na porta `10050`.
 
-* **VM2 (`vm2`) - Servidor / Backend API:**
-  * **IP Privado:** `192.168.56.11`
-  * **Memória RAM:** 1024 MB
-  * **Pasta Sincronizada:** Pasta do repositório mapeada para `/vagrant_data`
-  * **Provisionamento:** Gerenciado pelo Ansible disparado da VM1. Instala o Node.js 20.x, clona o repositório, instala dependências (`npm ci`) e executa a aplicação via PM2 na porta `8080`.
+### Provisionamento Rápido
 
-### Passo a Passo para Executar a Infraestrutura
-
-1. **Pré-requisitos:**
-   * [VirtualBox](https://www.virtualbox.org/) instalado como provedor.
-   * [Vagrant](https://www.vagrantup.com/) instalado.
-
-2. **Inicializar as máquinas virtuais:**
-   No terminal, navegue até a raiz do repositório onde estão os arquivos `Vagrantfile`, `inventory.ini` e `configura-node.yaml` e execute:
+1. **Subir e provisionar todo o ambiente:**
    ```bash
    vagrant up
    ```
-   *(O Vagrant fará o download da box, criará as duas VMs e a VM1 executará o playbook do Ansible configurando a API na VM2 sem necessidade de intervenção manual).*
+   *O Vagrant sobe as duas VMs, inicializa os containers do Zabbix na VM1 e dispara automaticamente o `configura-node.yaml` para implantar a API, configurar o Zabbix Agent 2 na VM2 e registrar o monitoramento via API do Zabbix.*
 
-### Como Testar a API (Dentro da VM1)
-
-Para verificar se a infraestrutura foi configurada com sucesso, os testes devem ser realizados a partir da **VM1 (Cliente)**:
-
-1. **Acesse a VM1 via SSH:**
+2. **Reprovisionar (caso as VMs já estejam ligadas):**
    ```bash
-   vagrant ssh vm1
+   vagrant provision
    ```
 
-2. **Teste a rota raiz com `curl` ou `wget`:**
-   ```bash
-   curl http://192.168.56.11:8080/
-   # ou
-   wget -qO- http://192.168.56.11:8080/
-   ```
-   *Resposta esperada:* `{"status":"ok","message":"API Films rodando"}`
+### Validação
 
-3. **Teste a rota de filmes:**
+1. **Testar endpoints da API (via host ou VM1):**
    ```bash
-   curl -i http://192.168.56.11:8080/api/filmes
+   curl [http://192.168.56.11:8080/api/filmes](http://192.168.56.11:8080/api/filmes)
+   curl [http://192.168.56.11:8080/health](http://192.168.56.11:8080/health)
    ```
 
-4. **Encerrar a sessão SSH:**
+2. **Testar chave do Zabbix Agent 2 (na VM2):**
    ```bash
-   exit
+   vagrant ssh vm2 -c "sudo zabbix_agent2 -t api.films.health.status"
    ```
+   *Retorno esperado:* `api.films.health.status [s|200]`
+
+---
+
+## Monitoramento Zabbix
+
+O arquivo `zabbix-template-api-films.yaml` na raiz do projeto contém o template oficial para o Zabbix 7.0 LTS. Todo o processo de configuração no servidor é executado **automaticamente** pelo Ansible via API JSON-RPC (`http://192.168.56.10/api_jsonrpc.php`):
+
+* Importação/atualização do template `API Films Node.js Monitoring`.
+* Cadastro do host `vm2` (`192.168.56.11:10050`).
+* Vinculação dos templates `API Films Node.js Monitoring` e `Linux by Zabbix agent`.
+* Validação automática da coleta inicial (`HTTP 200` no `/health`).
+
+### Acesso ao Painel Web
+
+* **URL:** `http://192.168.56.10`
+* **Usuário:** `Admin`
+* **Senha:** `zabbix`
+
+### Métricas e Alertas Configurados
+
+* **HTTP Status (`/health`):** Verifica disponibilidade a cada 30s (Trigger *High* se `HTTP <> 200`).
+* **Uptime:** Tempo de atividade do processo Node.js em segundos.
+* **Uso de Memória RSS (MB):** Consumo de RAM da aplicação (Trigger *Warning* se `> 512 MB`).
+
+---
+
+## Workflow de Versionamento
+
+Adota o padrão Gitflow com branches `feature/*`, `dev`, `stage` e `main`:
+1. Funcionalidades e correções são desenvolvidas em branches específicas.
+2. Integradas na branch `dev` via Pull Request.
+3. Promovidas para `stage` para homologação.
+4. Mescladas na `main` para produção.
+
+## Docker Hub
+
+[![Docker Pulls](https://badgen.net/docker/pulls/joaoguibarros/api-films)](https://hub.docker.com/r/joaoguibarros/api-films)
+[![Docker Image Size](https://badgen.net/docker/size/joaoguibarros/api-films)](https://hub.docker.com/r/joaoguibarros/api-films)
+
+Imagem oficial: [hub.docker.com/r/joaoguibarros/api-films](https://hub.docker.com/r/joaoguibarros/api-films)
