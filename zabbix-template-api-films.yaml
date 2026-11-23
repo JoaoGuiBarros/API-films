@@ -20,8 +20,8 @@ zabbix_export:
           description: 'Verifica se o endpoint http://localhost:8080/health responde com HTTP 200'
           triggers:
             - uuid: f5bdf27c781f4808b31df757204b035c
-              expression: 'last(/API Films Node.js Monitoring/api.films.health.status)<>200'
-              name: 'API Films está fora do ar na VM2 (HTTP <> 200)'
+              expression: 'count(/API Films Node.js Monitoring/api.films.health.status,#3,"ne","200")=3'
+              name: 'API Films está fora do ar na VM2 (HTTP <> 200 por 3 coletas)'
               priority: HIGH
         - uuid: bbbd9d02999d4822a9577ea2d7ffed3f
           name: 'API Films - JSON Raw Health'
@@ -35,6 +35,7 @@ zabbix_export:
           type: DEPENDENT
           key: api.films.uptime
           delay: '0'
+          value_type: UNSIGNED
           units: uptime
           master_item:
             key: api.films.health.json
@@ -47,6 +48,7 @@ zabbix_export:
           type: DEPENDENT
           key: api.films.memory.rss
           delay: '0'
+          value_type: FLOAT
           units: MB
           master_item:
             key: api.films.health.json
