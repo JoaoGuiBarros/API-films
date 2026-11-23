@@ -20,8 +20,8 @@ zabbix_export:
           description: 'Verifica se o endpoint http://localhost:8080/health responde com HTTP 200'
           triggers:
             - uuid: f5bdf27c781f4808b31df757204b035c
-              expression: 'last(/API Films Node.js Monitoring/api.films.health.status)<>200'
-              name: 'API Films está fora do ar na VM2 (HTTP <> 200)'
+              expression: 'count(/API Films Node.js Monitoring/api.films.health.status,#3,"ne","200")=3'
+              name: 'API Films está fora do ar na VM2 (HTTP <> 200 por 3 coletas)'
               priority: HIGH
         - uuid: bbbd9d02999d4822a9577ea2d7ffed3f
           name: 'API Films - JSON Raw Health'
@@ -35,6 +35,7 @@ zabbix_export:
           type: DEPENDENT
           key: api.films.uptime
           delay: '0'
+          value_type: UNSIGNED
           units: uptime
           master_item:
             key: api.films.health.json
@@ -47,6 +48,7 @@ zabbix_export:
           type: DEPENDENT
           key: api.films.memory.rss
           delay: '0'
+          value_type: FLOAT
           units: MB
           master_item:
             key: api.films.health.json
@@ -59,3 +61,58 @@ zabbix_export:
               expression: 'last(/API Films Node.js Monitoring/api.films.memory.rss)>512'
               name: 'API Films com alto consumo de memória (> 512MB)'
               priority: WARNING
+      dashboards:
+        - uuid: 7c3e9a14b82f4d1e9a6c5b4f3e2d1a0b
+          name: 'API Films Overview'
+          pages:
+            - name: 'Métricas da Aplicação'
+              widgets:
+                - type: item
+                  name: 'HTTP Status (/health)'
+                  x: '0'
+                  'y': '0'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'API Films Node.js Monitoring'
+                        key: api.films.health.status
+                - type: item
+                  name: 'Tempo de Atividade (Uptime)'
+                  x: '24'
+                  'y': '0'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'API Films Node.js Monitoring'
+                        key: api.films.uptime
+                - type: item
+                  name: 'Uso de Memória RSS'
+                  x: '48'
+                  'y': '0'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'API Films Node.js Monitoring'
+                        key: api.films.memory.rss
+                - type: svggraph
+                  name: 'Consumo de Memória RSS (MB) ao Longo do Tempo'
+                  x: '0'
+                  'y': '3'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 199C0D
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'API Films - Uso de Memória RSS (MB)'

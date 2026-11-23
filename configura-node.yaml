@@ -23,7 +23,13 @@
         name: nodejs
         state: present
 
-    - name: Clonar repositório da API
+    - name: Instalar PM2 globalmente para rodar a API em background
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Clonar repositório da API como usuário vagrant
+      become_user: vagrant
       git:
         repo: 'https://github.com/JoaoGuiBarros/API-films.git'
         dest: /home/vagrant/api-films
@@ -31,19 +37,25 @@
         force: yes
 
     - name: Instalar dependências de execução (npm ci)
+      become_user: vagrant
       command: npm ci --omit=dev
       args:
         chdir: /home/vagrant/api-films
 
-    - name: Instalar PM2 globalmente para rodar a API em background
-      npm:
-        name: pm2
-        global: yes
-
     - name: Iniciar ou reiniciar a aplicação na porta 8080
+      become_user: vagrant
       shell: pm2 describe api-films > /dev/null && pm2 restart api-films || pm2 start src/server.js --name api-films
       args:
         chdir: /home/vagrant/api-films
+
+    - name: Salvar lista de processos do PM2
+      become_user: vagrant
+      command: pm2 save
+
+    - name: Configurar PM2 para iniciar automaticamente no boot (systemd)
+      shell: env PATH=$PATH:/usr/bin pm2 startup systemd -u vagrant --hp /home/vagrant
+      args:
+        creates: /etc/systemd/system/pm2-vagrant.service
 
     - name: Baixar repositório oficial do Zabbix 7.0 LTS (Ubuntu 22.04 Jammy)
       get_url:
@@ -64,19 +76,19 @@
     - name: Configurar IP do Zabbix Server (Passivo) no zabbix_agent2.conf
       lineinfile:
         path: /etc/zabbix/zabbix_agent2.conf
-        regexp: '^Server='
+        regexp: '^#?\s*Server='
         line: "Server={{ zabbix_server_ip }}"
 
     - name: Configurar IP do Zabbix Server (Ativo) no zabbix_agent2.conf
       lineinfile:
         path: /etc/zabbix/zabbix_agent2.conf
-        regexp: '^ServerActive='
+        regexp: '^#?\s*ServerActive='
         line: "ServerActive={{ zabbix_server_ip }}"
 
     - name: Configurar Hostname no zabbix_agent2.conf
       lineinfile:
         path: /etc/zabbix/zabbix_agent2.conf
-        regexp: '^Hostname='
+        regexp: '^#?\s*Hostname='
         line: "Hostname={{ inventory_hostname }}"
 
     - name: Criar monitoramento customizado (UserParameter) para a API Films
@@ -155,6 +167,10 @@
                 updateExisting: true
               template_groups:
                 createMissing: true
+              templateDashboards:
+                createMissing: true
+                updateExisting: true
+                deleteMissing: true
               items:
                 createMissing: true
                 updateExisting: true
@@ -165,6 +181,39 @@
                 deleteMissing: true
             source: "{{ lookup('file', template_path) }}"
           id: 2
+
+    - name: "[Passo 2.1] Buscar host padrão 'Zabbix server'"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.get"
+          params:
+            filter:
+              host:
+                - "Zabbix server"
+          id: 21
+      register: default_zabbix_host
+
+    - name: "[Passo 2.2] Desativar monitoramento por agente no host padrão 'Zabbix server'"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.update"
+          params:
+            hostid: "{{ default_zabbix_host.json.result[0].hostid }}"
+            status: 1
+          id: 22
+      when: default_zabbix_host.json.result | length > 0
 
     - name: "[Passo 3] Buscar ID do grupo 'Linux servers'"
       uri:
