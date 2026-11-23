@@ -33,7 +33,7 @@
       git:
         repo: 'https://github.com/JoaoGuiBarros/API-films.git'
         dest: /home/vagrant/api-films
-        version: feature/infra-monitoring-hardening
+        version: main
         force: yes
 
     - name: Instalar dependências de execução (npm ci)
@@ -167,6 +167,10 @@
                 updateExisting: true
               template_groups:
                 createMissing: true
+              templateDashboards:
+                createMissing: true
+                updateExisting: true
+                deleteMissing: true
               items:
                 createMissing: true
                 updateExisting: true
@@ -177,6 +181,39 @@
                 deleteMissing: true
             source: "{{ lookup('file', template_path) }}"
           id: 2
+
+    - name: "[Passo 2.1] Buscar host padrão 'Zabbix server'"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.get"
+          params:
+            filter:
+              host:
+                - "Zabbix server"
+          id: 21
+      register: default_zabbix_host
+
+    - name: "[Passo 2.2] Desativar monitoramento por agente no host padrão 'Zabbix server'"
+      uri:
+        url: "{{ zabbix_api_url }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ zabbix_login.json.result }}"
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.update"
+          params:
+            hostid: "{{ default_zabbix_host.json.result[0].hostid }}"
+            status: 1
+          id: 22
+      when: default_zabbix_host.json.result | length > 0
 
     - name: "[Passo 3] Buscar ID do grupo 'Linux servers'"
       uri:

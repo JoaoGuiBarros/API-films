@@ -61,3 +61,58 @@ zabbix_export:
               expression: 'last(/API Films Node.js Monitoring/api.films.memory.rss)>512'
               name: 'API Films com alto consumo de memória (> 512MB)'
               priority: WARNING
+      dashboards:
+        - uuid: 7c3e9a14b82f4d1e9a6c5b4f3e2d1a0b
+          name: 'API Films Overview'
+          pages:
+            - name: 'Métricas da Aplicação'
+              widgets:
+                - type: item
+                  name: 'HTTP Status (/health)'
+                  x: '0'
+                  'y': '0'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'API Films Node.js Monitoring'
+                        key: api.films.health.status
+                - type: item
+                  name: 'Tempo de Atividade (Uptime)'
+                  x: '24'
+                  'y': '0'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'API Films Node.js Monitoring'
+                        key: api.films.uptime
+                - type: item
+                  name: 'Uso de Memória RSS'
+                  x: '48'
+                  'y': '0'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'API Films Node.js Monitoring'
+                        key: api.films.memory.rss
+                - type: svggraph
+                  name: 'Consumo de Memória RSS (MB) ao Longo do Tempo'
+                  x: '0'
+                  'y': '3'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 199C0D
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'API Films - Uso de Memória RSS (MB)'
