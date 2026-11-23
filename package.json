@@ -9,7 +9,10 @@
     "dev": "node --watch src/server.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/ tests/"
+    "lint": "eslint src/ tests/",
+    "api:down": "vagrant ssh vm2 -c \"pm2 stop api-films\"",
+    "api:up": "vagrant ssh vm2 -c \"pm2 start api-films\"",
+    "api:status": "vagrant ssh vm2 -c \"pm2 status\""
   },
   "jest": {
     "collectCoverage": true,
